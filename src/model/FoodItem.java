@@ -26,8 +26,7 @@ public abstract class FoodItem implements Donatable, Trackable {
     public String getDisplayInfo() {
         return id + " | " + name + " | expires: " + expirationDate;
     }
-
-    // getters & setters
+    
     public int getId() {
         return id;
     }
