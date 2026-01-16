@@ -10,8 +10,8 @@ public class DatabaseConnection {
             "jdbc:postgresql://localhost:5432/postgres";
 
     private static final String USER = "postgres";
-    private static final String PASSWORD = "muxa"; // твой пароль
-
+    private static final String PASSWORD = "muxa";
+    
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
