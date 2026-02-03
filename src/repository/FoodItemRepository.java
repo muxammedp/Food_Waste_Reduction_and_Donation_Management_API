@@ -1,37 +1,49 @@
 package repository;
 
-import model.*;
-import utils.DatabaseConnection;
 import exception.DatabaseOperationException;
 import exception.ResourceNotFoundException;
+import model.*;
+import repository.interfaces.CrudRepository;
+import utils.DatabaseConnection;
 
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FoodItemRepository {
+public class FoodItemRepository implements CrudRepository<FoodItem> {
 
+    @Override
     public void create(FoodItem item) {
+
         String sql = """
             INSERT INTO food_items (name, expiration_date, type)
             VALUES (?, ?, ?)
         """;
 
         try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+             PreparedStatement ps =
+                     c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, item.getName());
             ps.setDate(2, Date.valueOf(item.getExpirationDate()));
-            ps.setString(3, item.getCategory());
+            ps.setString(3, item.getType().name());
+
             ps.executeUpdate();
 
+            ResultSet keys = ps.getGeneratedKeys();
+            if (keys.next()) {
+                System.out.println("FoodItem created with id = " + keys.getInt(1));
+            }
+
         } catch (SQLException e) {
-            throw new DatabaseOperationException("Error creating food item");
+            throw new DatabaseOperationException("Error creating food item: " + e.getMessage());
         }
     }
 
+    @Override
     public FoodItem getById(int id) {
+
         String sql = "SELECT * FROM food_items WHERE id = ?";
 
         try (Connection c = DatabaseConnection.getConnection();
@@ -41,52 +53,57 @@ public class FoodItemRepository {
             ResultSet rs = ps.executeQuery();
 
             if (!rs.next()) {
-                throw new ResourceNotFoundException("Food item not found");
+                throw new ResourceNotFoundException("FoodItem not found");
             }
 
-            String type = rs.getString("type");
+            FoodType type = FoodType.valueOf(rs.getString("type"));
             LocalDate date = rs.getDate("expiration_date").toLocalDate();
+            int dbId = rs.getInt("id");
+            String name = rs.getString("name");
 
-            if (type.equals("Perishable")) {
-                return new PerishableFood(id, rs.getString("name"), date);
-            } else {
-                return new NonPerishableFood(id, rs.getString("name"), date);
-            }
+            return type == FoodType.PERISHABLE
+                    ? new PerishableFood(dbId, name, date)
+                    : new NonPerishableFood(dbId, name, date);
 
         } catch (SQLException e) {
-            throw new DatabaseOperationException("Error fetching food item");
+            throw new DatabaseOperationException("Error fetching food item: " + e.getMessage());
         }
     }
 
+    @Override
     public List<FoodItem> getAll() {
-        List<FoodItem> items = new ArrayList<>();
+
+        List<FoodItem> list = new ArrayList<>();
         String sql = "SELECT * FROM food_items";
 
         try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
+
+                FoodType type = FoodType.valueOf(rs.getString("type"));
+                LocalDate date = rs.getDate("expiration_date").toLocalDate();
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
-                LocalDate date = rs.getDate("expiration_date").toLocalDate();
-                String type = rs.getString("type");
 
-                FoodItem item = type.equals("Perishable")
+                FoodItem item = type == FoodType.PERISHABLE
                         ? new PerishableFood(id, name, date)
                         : new NonPerishableFood(id, name, date);
 
-                items.add(item);
+                list.add(item);
             }
 
-        } catch (SQLException e) {
-            throw new DatabaseOperationException("Error fetching food items");
-        }
+            return list;
 
-        return items;
+        } catch (SQLException e) {
+            throw new DatabaseOperationException("Error fetching food list: " + e.getMessage());
+        }
     }
 
+    @Override
     public void delete(int id) {
+
         String sql = "DELETE FROM food_items WHERE id = ?";
 
         try (Connection c = DatabaseConnection.getConnection();
@@ -96,7 +113,7 @@ public class FoodItemRepository {
             ps.executeUpdate();
 
         } catch (SQLException e) {
-            throw new DatabaseOperationException("Error deleting food item");
+            throw new DatabaseOperationException("Error deleting food item: " + e.getMessage());
         }
     }
 }

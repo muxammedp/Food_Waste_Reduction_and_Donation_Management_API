@@ -1,7 +1,5 @@
 package exception;
 
 public class DuplicateResourceException extends InvalidInputException {
-    public DuplicateResourceException(String message) {
-        super(message);
-    }
+    public DuplicateResourceException(String msg) { super(msg); }
 }

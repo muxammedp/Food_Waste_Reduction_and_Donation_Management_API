@@ -1,32 +1,26 @@
 package model;
 
-import interfaces.Donatable;
-import interfaces.Trackable;
-import exception.InvalidInputException;
-
 import java.time.LocalDate;
 
-public abstract class FoodItem implements Donatable, Trackable {
+public abstract class FoodItem {
 
-    protected int id;
-    protected String name;
-    protected LocalDate expirationDate;
+    private int id;
+    private String name;
+    private LocalDate expirationDate;
 
-    public FoodItem(int id, String name, LocalDate expirationDate) {
-        if (name == null || name.isBlank()) {
-            throw new InvalidInputException("Food name cannot be empty");
-        }
+    protected FoodItem(int id, String name, LocalDate expirationDate) {
         this.id = id;
         this.name = name;
         this.expirationDate = expirationDate;
     }
 
-    public abstract String getCategory();
+    public abstract boolean isEligibleForDonation();
+    public abstract FoodType getType();
 
-    public String getDisplayInfo() {
-        return id + " | " + name + " | expires: " + expirationDate;
+    public boolean isExpired() {
+        return expirationDate.isBefore(LocalDate.now());
     }
-    
+
     public int getId() {
         return id;
     }

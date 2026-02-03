@@ -1,16 +1,17 @@
 package repository;
 
-import utils.DatabaseConnection;
 import exception.DatabaseOperationException;
+import model.Donation;
+import utils.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.time.LocalDate;
 
 public class DonationRepository {
 
-    public void create(int foodId, int organizationId) {
+    public void create(Donation donation) {
+
         String sql = """
             INSERT INTO donations (food_item_id, organization_id)
             VALUES (?, ?)
@@ -19,12 +20,13 @@ public class DonationRepository {
         try (Connection c = DatabaseConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setInt(1, foodId);
-            ps.setInt(2, organizationId);
+            ps.setInt(1, donation.getFoodItem().getId());
+            ps.setInt(2, donation.getOrganization().getId());
+
             ps.executeUpdate();
 
         } catch (SQLException e) {
-            throw new DatabaseOperationException("Error creating donation");
+            throw new DatabaseOperationException("Error creating donation: " + e.getMessage());
         }
     }
 }

@@ -1,6 +1,9 @@
-import controller.DonationController;
 import model.*;
+import repository.DonationRepository;
 import repository.FoodItemRepository;
+import service.DonationService;
+import utils.ReflectionUtils;
+import utils.SortingUtils;
 
 import java.time.LocalDate;
 
@@ -9,37 +12,21 @@ public class Main {
     public static void main(String[] args) {
 
         FoodItemRepository foodRepo = new FoodItemRepository();
-        DonationController controller = new DonationController();
+        DonationRepository donationRepo = new DonationRepository();
+        DonationService donationService =
+                new DonationService(foodRepo, donationRepo);
 
-        foodRepo.create(new PerishableFood(1, "Milk", LocalDate.now().plusDays(3)));
-        foodRepo.create(new PerishableFood(2, "Bread", LocalDate.now().plusDays(1)));
-        foodRepo.create(new PerishableFood(3, "Yogurt", LocalDate.now().plusDays(5)));
-        foodRepo.create(new PerishableFood(4, "Cheese", LocalDate.now().plusDays(10)));
-        foodRepo.create(new PerishableFood(5, "Chicken", LocalDate.now().plusDays(2)));
-        foodRepo.create(new PerishableFood(6, "Apples", LocalDate.now().plusDays(7)));
-        foodRepo.create(new PerishableFood(7, "Tomatoes", LocalDate.now().plusDays(4)));
+        FoodItem milk = new PerishableFood(0, "Milk", LocalDate.now().plusDays(3));
+        FoodItem rice = new NonPerishableFood(0, "Rice", LocalDate.now().plusMonths(6));
 
-        foodRepo.create(new NonPerishableFood(8, "Rice", LocalDate.now().plusMonths(12)));
-        foodRepo.create(new NonPerishableFood(9, "Pasta", LocalDate.now().plusMonths(18)));
-        foodRepo.create(new NonPerishableFood(10, "Canned Beans", LocalDate.now().plusYears(2)));
-        foodRepo.create(new NonPerishableFood(11, "Flour", LocalDate.now().plusMonths(10)));
-        foodRepo.create(new NonPerishableFood(12, "Sugar", LocalDate.now().plusYears(3)));
-        foodRepo.create(new NonPerishableFood(13, "Salt", LocalDate.now().plusYears(5)));
-        foodRepo.create(new NonPerishableFood(14, "Cooking Oil", LocalDate.now().plusYears(1)));
-        System.out.println("Food items successfully added.");
+        foodRepo.create(milk);
+        foodRepo.create(rice);
 
-        controller.donateFood(1, 1);   // Milk
-        controller.donateFood(3, 1);   // Yogurt
-        controller.donateFood(8, 2);   // Rice
+        Organization org = new Organization(1, "City Food Bank");
+        donationService.donateFood(1, org);
 
-        System.out.println(foodRepo.getById(1).getDisplayInfo() + " | Status: " + foodRepo.getById(1).getStatus());
-        System.out.println(foodRepo.getById(5).getDisplayInfo() + " | Status: " + foodRepo.getById(5).getStatus());
-        System.out.println(foodRepo.getById(10).getDisplayInfo() + " | Status: " + foodRepo.getById(10).getStatus());
+        SortingUtils.sortByExpiration(foodRepo.getAll()).forEach(f -> System.out.println(f.getName()));
 
-        System.out.println("\n--- All Food Items in Database ---");
-        for (FoodItem item : foodRepo.getAll()) {
-            System.out.println(item.getDisplayInfo() + " | " + item.getCategory() + " | " + item.getStatus());
-        }
-        controller.donateFood(1, 1);
+        ReflectionUtils.inspectClass(PerishableFood.class);
     }
 }

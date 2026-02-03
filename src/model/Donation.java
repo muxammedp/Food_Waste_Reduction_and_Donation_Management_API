@@ -16,15 +16,7 @@ public class Donation {
         this.donationDate = LocalDate.now();
     }
 
-    public FoodItem getFoodItem() {
-        return foodItem;
-    }
-
-    public Organization getOrganization() {
-        return organization;
-    }
-
-    public LocalDate getDonationDate() {
-        return donationDate;
-    }
+    public FoodItem getFoodItem() { return foodItem; }
+    public Organization getOrganization() { return organization; }
+    public LocalDate getDonationDate() { return donationDate; }
 }

@@ -1,23 +1,35 @@
 package service;
 
-import model.FoodItem;
-import repository.DonationRepository;
-import repository.FoodItemRepository;
 import exception.InvalidInputException;
+import model.Donation;
+import model.FoodItem;
+import model.Organization;
+import repository.DonationRepository;
+import repository.interfaces.CrudRepository;
 
 public class DonationService {
 
-    private final FoodItemRepository foodRepo = new FoodItemRepository();
-    private final DonationRepository donationRepo = new DonationRepository();
+    private final CrudRepository<FoodItem> foodRepository;
+    private final DonationRepository donationRepository;
 
-    public void donateFood(int foodId, int organizationId) {
-        FoodItem item = foodRepo.getById(foodId);
+    public DonationService(CrudRepository<FoodItem> foodRepository,
+                           DonationRepository donationRepository) {
+        this.foodRepository = foodRepository;
+        this.donationRepository = donationRepository;
+    }
 
-        if (!item.canBeDonated()) {
-            throw new InvalidInputException("Food item is expired and cannot be donated");
+    public void donateFood(int foodId, Organization organization) {
+
+        FoodItem item = foodRepository.getById(foodId);
+
+        if (!item.isEligibleForDonation()) {
+            throw new InvalidInputException("Food is expired and cannot be donated");
         }
 
-        donationRepo.create(foodId, organizationId);
-        System.out.println("Donation successful: " + item.getDisplayInfo());
+        Donation donation = new Donation(0, item, organization);
+        donationRepository.create(donation);
+
+        System.out.println("Donation successful: " + item.getName()
+                + " → " + organization.getName());
     }
 }

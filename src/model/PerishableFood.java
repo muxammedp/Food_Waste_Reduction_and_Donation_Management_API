@@ -9,17 +9,12 @@ public class PerishableFood extends FoodItem {
     }
 
     @Override
-    public boolean canBeDonated() {
-        return expirationDate.isAfter(LocalDate.now());
+    public boolean isEligibleForDonation() {
+        return !isExpired();
     }
 
     @Override
-    public String getStatus() {
-        return canBeDonated() ? "Fresh" : "Expired";
-    }
-
-    @Override
-    public String getCategory() {
-        return "PERISHABLE";
+    public FoodType getType() {
+        return FoodType.PERISHABLE;
     }
 }

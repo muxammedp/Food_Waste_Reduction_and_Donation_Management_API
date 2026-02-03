@@ -9,18 +9,12 @@ public class NonPerishableFood extends FoodItem {
     }
 
     @Override
-    public boolean canBeDonated() {
+    public boolean isEligibleForDonation() {
         return true;
     }
 
     @Override
-    public String getStatus() {
-        return "Safe for donation";
+    public FoodType getType() {
+        return FoodType.NON_PERISHABLE;
     }
-
-    @Override
-    public String getCategory() {
-        return "NON_PERISHABLE";
-    }
-
 }

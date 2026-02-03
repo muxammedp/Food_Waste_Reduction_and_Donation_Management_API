@@ -2,9 +2,11 @@
 
 ## A. Project Overview
 
-This project is a Java-based REST-like API designed to address the global problem of food waste. Large amounts of edible food are discarded daily due to poor tracking and management. This system automates the process of managing food items, checking expiration dates, and safely donating suitable food to charitable organizations.
+This project is a Java-based multi-layer API designed to address a **global and socially relevant problem — food waste**. Large amounts of edible food are discarded daily due to poor tracking of expiration dates and the absence of structured donation workflows.
 
-The main goal of the system is to reduce food waste by ensuring that only valid, non-expired food items are donated, while maintaining a clear audit trail of all operations.
+The system automates food item management, validates expiration dates, and ensures that **only safe, eligible food** is donated to charitable organizations. All operations are logged and handled through a clean, layered architecture following **SOLID principles**.
+
+This project was initially implemented in Assignment 3 and **refactored and improved in Assignment 4** to apply SOLID architecture and advanced OOP features.
 
 ### Primary Users
 
@@ -14,122 +16,205 @@ The main goal of the system is to reduce food waste by ensuring that only valid,
 
 ---
 
-## B. OOP Design Documentation
+## B. SOLID Architecture & OOP Design
 
-### Abstract Class
+### Abstract Base Class
 
 **FoodItem (abstract)**
 
-* Fields: id, name, expirationDate
-* Methods:
+* Fields:
 
-    * canBeDonated() (abstract)
-    * getCategory() (abstract)
-    * getDisplayInfo() (concrete)
+  * `id`
+  * `name`
+  * `expirationDate`
 
-### Subclasses
+* Abstract methods:
 
-* **PerishableFood** – food with a limited shelf life
-* **NonPerishableFood** – food with a long shelf life
+  * `isEligibleForDonation()`
+  * `getType()`
 
-Both subclasses override abstract methods and demonstrate polymorphism when accessed via a FoodItem reference.
+* Concrete method:
 
-### Interfaces
+  * `isExpired()`
 
-* **Donatable** – defines whether an item can be donated
-* **Trackable** – provides status information about food items
+This design follows the **Open–Closed Principle (OCP)** — new food types can be added without modifying existing logic.
+
+---
+
+### Subclasses (LSP-compliant)
+
+* **PerishableFood** — food with limited shelf life
+* **NonPerishableFood** — food with long shelf life
+
+Both subclasses:
+
+* Override abstract methods
+* Behave correctly when accessed via `FoodItem` reference
+* Do not break substitutability (**LSP**)
+
+**Polymorphism example:**
+
+```java
+FoodItem item = new PerishableFood(...);
+item.isEligibleForDonation();
+```
+
+---
+
+### Interfaces (ISP)
+
+The project uses small, focused interfaces to avoid unnecessary dependencies:
+
+* `CrudRepository<T>` — generic CRUD operations (Generics)
+* Service interfaces (used for dependency inversion)
+
+Interfaces demonstrate **Interface Segregation Principle (ISP)** and **Dependency Inversion Principle (DIP)**.
+
+---
 
 ### Composition / Aggregation
 
-* **Donation** contains references to FoodItem and Organization
+* **Donation** → contains references to:
 
-### Polymorphism Example
+  * `FoodItem`
+  * `Organization`
 
-FoodItem item = new PerishableFood(...);
-item.canBeDonated();
+This relationship is implemented both:
+
+* In OOP (object references)
+* In the database (foreign keys)
 
 ---
 
-## C. Database Description
+## C. Advanced Java Features
 
-### Database Schema
+### Generics
 
-The project uses PostgreSQL with JDBC.
+* Generic CRUD repository:
+
+```java
+CrudRepository<FoodItem>
+```
+
+This allows reuse of repository logic and improves type safety.
+
+### Lambdas
+
+Used for sorting food items by expiration date:
+
+```java
+items.stream()
+     .sorted(Comparator.comparing(FoodItem::getExpirationDate))
+     .toList();
+```
+
+### Reflection (RTTI)
+
+A utility class demonstrates runtime inspection:
+
+* Class name
+* Fields
+* Methods
+
+This is shown during application execution and documented as part of advanced OOP usage.
+
+---
+
+## D. Database Description
+
+### Database Technology
+
+* PostgreSQL
+* JDBC with PreparedStatements
+* Auto-generated IDs using `SERIAL`
+
+### Schema
 
 ```sql
 CREATE TABLE organizations (
-                               id SERIAL PRIMARY KEY,
-                               name VARCHAR(255) UNIQUE
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE
 );
 
 CREATE TABLE food_items (
-                            id SERIAL PRIMARY KEY,
-                            name VARCHAR(255),
-                            expiration_date DATE,
-                            type VARCHAR(20)
-                                CHECK (type IN ('PERISHABLE', 'NON_PERISHABLE'))
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    expiration_date DATE,
+    type VARCHAR(20)
+        CHECK (type IN ('PERISHABLE', 'NON_PERISHABLE'))
 );
 
 CREATE TABLE donations (
-                           id SERIAL PRIMARY KEY,
-                           food_item_id INT,
-                           organization_id INT,
+    id SERIAL PRIMARY KEY,
+    food_item_id INT,
+    organization_id INT,
 
-                           CONSTRAINT fk_food
-                               FOREIGN KEY (food_item_id)
-                                   REFERENCES food_items(id)
-                                   ON DELETE CASCADE,
+    CONSTRAINT fk_food
+        FOREIGN KEY (food_item_id)
+            REFERENCES food_items(id)
+            ON DELETE CASCADE,
 
-                           CONSTRAINT fk_org
-                               FOREIGN KEY (organization_id)
-                                   REFERENCES organizations(id)
-                                   ON DELETE CASCADE
+    CONSTRAINT fk_org
+        FOREIGN KEY (organization_id)
+            REFERENCES organizations(id)
+            ON DELETE CASCADE
+);
 ```
 
-### Sample INSERT Statements
+### Sample Data
 
 ```sql
-INSERT INTO organizations (id, name) VALUES (1, 'Food Bank');
-INSERT INTO food_items (name, expiration_date, type)
-VALUES (1, 'Milk', '2026-01-20', 'Perishable');
+INSERT INTO organizations (name) VALUES
+('City Food Bank'),
+('Helping Hands Charity');
 ```
 
 ---
 
-## D. Controller / API Demonstration
+## E. Layered Architecture
 
-The application demonstrates CRUD operations through a command-line interface:
+The application strictly follows:
 
-* Creating food items
-* Retrieving food items
-* Donating food
-* Handling invalid or expired food
+**Controller → Service → Repository → Database**
 
-All business logic is handled in the service layer.
+* **Controller layer**: handles CLI input only
+* **Service layer**: business rules, validation, exception handling
+* **Repository layer**: JDBC logic only, no business rules
+
+This separation ensures **SRP** and improves testability and maintainability.
 
 ---
 
-## E. Instructions to Compile and Run
+## F. Execution Instructions
 
-1. Ensure Java 17+ is installed
-2. Create the SQLite database using schema.sql
-3. Compile the project:
+1. Install **Java 17+**
+2. Create PostgreSQL database and run `schema.sql`
+3. Configure DB credentials in `DatabaseConnection.java`
+4. Compile the project:
 
-```
+```bash
 javac -d out src/**/*.java
 ```
 
-4. Run the application:
+5. Run the application:
 
-```
+```bash
 java -cp out Main
 ```
 
 ---
 
-## F. Screenshots
+## G. Screenshots
 
-Screenshots demonstrating successful CRUD operations and exception handling are located in:
+Screenshots demonstrating:
+
+* Successful CRUD operations
+* Validation failures
+* Donation logic
+* Reflection utility output
+* Sorted lists using lambdas
+
+Location:
 
 ```
 docs/screenshots/
@@ -137,22 +222,34 @@ docs/screenshots/
 
 ---
 
-## G. Reflection
+## H. Reflection
+
+### What Was Changed in Assignment 4
+
+* Refactored entities to use an abstract base class
+* Introduced SOLID-compliant layered architecture
+* Added generics to repositories
+* Moved validation and exceptions into the service layer
+* Reworked database interaction for PostgreSQL
+* Added reflection and lambda-based utilities
 
 ### What I Learned
 
-* Applying advanced OOP principles in real-world scenarios
-* Designing multi-layer architectures
-* Working with JDBC and PreparedStatements
-* Implementing custom exception hierarchies
+* How SOLID principles apply in real-world Java projects
+* Why business logic must not be placed in repositories
+* How generics improve flexibility and reduce duplication
+* How JDBC interacts with auto-generated database keys
+* The value of clean architecture for long-term scalability
 
 ### Challenges Faced
 
-* Handling database connections correctly
-* Designing clean abstractions
+* Correctly separating responsibilities between layers
+* Refactoring without breaking existing functionality
+* Adapting JDBC logic for PostgreSQL constraints
 
-### Benefits of JDBC and Multi-layer Design
+### Value of SOLID Architecture
 
 * Clear separation of concerns
-* Easier maintenance and scalability
-* Improved code readability
+* Easier debugging and refactoring
+* Better extensibility for future features
+* More professional, maintainable codebase
